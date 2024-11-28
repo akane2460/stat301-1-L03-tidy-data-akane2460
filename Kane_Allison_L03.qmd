@@ -1,0 +1,230 @@
+---
+title: "L03 Tidy Data"
+subtitle: "Data Science 1 with R (STAT 301-1)"
+author: "Allison Kane"
+
+format:
+  html:
+    toc: true
+    embed-resources: true
+    code-fold: show
+    link-external-newwindow: true
+
+execute:
+  warning: false
+  
+from: markdown+emoji 
+---
+
+
+::: {.callout-tip icon=false}
+
+## Github Repo Link
+
+[Allison Kane Github Repo Link](https://github.com/stat301-1-2023-fall/L03-tidy-data-akane2460.git)
+
+:::
+
+## Overview
+
+The goal of this lab is to learn what it means to be a "tidy" dataset.
+
+## Load packages
+
+```{r}
+#| label: load-pkgs
+#| code-fold: false
+
+# Loading package(s)
+library(tidyverse)
+library(fivethirtyeight)
+library(janitor)
+```
+
+## Datasets 
+
+All datasets for the Exercises are either defined inline, provided within the core `tidyverse` packages (`table1`, `table2`, `table4a`, `table4b`), or provided in the `fivethirtyeight` package (`drinks`).
+
+The Case Study dataset is stored in the `data` folder and called `users_top7_2020.csv`.
+
+```{r}
+#| label: load-data
+#| code-fold: false
+
+# Load dataset(s)
+users_top7_2020 <- read.csv("data/users_top7_2020.csv")
+```
+
+## Exercises
+
+### Exercise 1 
+
+Recreate the plot below showing the change in cases over time using `table2`. What do you need to do first?
+
+::: {.callout-tip icon="false"}
+## Solution
+
+The data needs to be tidied up. The `pivot_wider` function will help accomplish that.
+
+```{r}
+#| label: ex 1
+# first, need to tidy the data for the cases and population
+table2_tidy <- table2 |> 
+  pivot_wider(
+    names_from = "type", 
+    values_from = "count")
+```
+
+![Cases Consumed Each Year By Country](plots/ex1_plot.png)
+
+:::
+
+### Exercise 2
+
+Tidy the simple tibble of [M&M](https://en.wikipedia.org/wiki/M%26M%27s) data below and drop the NA values.
+
+Do you need to make it wider or longer? What are the variables in your tidy version? What argument drops the NA values?
+
+```{r}
+#| label: ex-02
+
+# simple tibble of M&M data
+mm_data <- tribble(
+  ~mm_type, ~blue, ~orange,	~green,	~yellow, ~brown, ~red, ~cyan_blue,
+  "plain",  6,     18,      12,	    6,       7,	     7,    NA,
+  "peanut", NA,	   11,	    9,	    1,	     12,	   8,    15
+)
+```
+
+::: {.callout-tip icon="false"}
+## Solution
+
+This data frame needs to be made longer. The variables in the tidy version is color. The observations are the untidy column heads "blue", "orange", "green", etc. The use of na.omit() will remove NA values for the peanut m and m blue count and the plain m and m cyan blue count.
+
+```{r}
+#| label: ex 2
+
+  mm_data |> 
+    pivot_longer(
+        cols = c("blue", "orange", "green", "yellow", "brown", "red", "cyan_blue"),
+        names_to = "color",
+        values_to = "count"
+    ) |>
+  na.omit()
+
+
+```
+
+
+:::
+
+### Exercise 3
+
+Use `table4a` and **only** the `pivot_longer` function to recreate:
+
+::: {.callout-tip icon="false"}
+## Solution
+
+```{r}
+#| label: ex 3
+
+# tidy data
+  table4a |> 
+    pivot_longer(
+      cols = c("1999", "2000"),
+      names_to = "year",
+      values_to = "cases"
+    )
+
+```
+
+
+:::
+
+### Exercise 4
+
+Using the `drinks` dataset and **only** the `pivot_longer` function to recreate:
+
+::: {.callout-tip icon="false"}
+## Solution
+
+```{r}
+#| label: ex 4
+  drinks |> 
+    pivot_longer(
+      cols = c("beer_servings", 
+               "spirit_servings", 
+               "wine_servings"),
+      names_to = "type",
+      values_to = "servings"
+    )
+
+```
+
+:::
+
+### Exercise 5
+
+What happens if you use `pivot_wider()` on this table so that we have a dataset with 3 columns (`respondent_name`, `age`, `height`) and why? 
+
+Fix the issue by adding a new column.
+
+```{r}
+#| label: ex-05
+#| eval: false
+
+# dataset/table
+people <- tribble(
+  ~respondent_name,  ~key,    ~value,
+  #-----------------|--------|------
+  "Phillip Woods",   "age",       45,
+  "Phillip Woods",   "height",   186,
+  "Phillip Woods",   "age",       50,
+  "Jessica Cordero", "age",       37,
+  "Jessica Cordero", "height",   156
+)
+```
+
+::: {.callout-tip icon="false"}
+## Solution
+
+If trying to use `pivot_wider`, this results in observation for age potentially being *a list* because Phillip Woods has multiple values listed for *"age"*. 
+
+```{r}
+#| label: ex 5 solution
+
+## updated data
+people_updated <- tribble(
+  ~respondent_name,  ~key,    ~value, ~time,
+  #-----------------|--------|-------|------
+  "Phillip Woods",   "age",       45,  "t1",
+  "Phillip Woods",   "height",   186,  "t1",
+  "Phillip Woods",   "age",       50,  "t2",
+  "Jessica Cordero", "age",       37,  "t1",
+  "Jessica Cordero", "height",   156,  "t1"
+)
+
+
+people_updated |>
+  pivot_wider(
+    names_from = key,
+    values_from = value,
+    )
+```
+
+
+:::
+
+## Case Study
+
+Tinder is interested in knowing more about their most active users, specifically their 7 most active users during 2020. They want to visualize the matches, likes, and passes over time for each user. 
+
+::: {.callout-tip icon="false"}
+## Solution
+
+![Activity of Top 7 Tinder Users (2020)](plots/top7_swipes_over_time.png)
+
+From these graphs, we can conclude that typically the number of matches and likes tend to remain at similar levels throughout the year (with a few exceptions). In most instances, the number of likes were slightly higher than the number of matches, which makes sense because most people will not receive likes back 100% of the time. For the most part, the number of likes and matches stay consistent throughout the year, with the exception of one user (user id 4afedf50a0e49727cc88dd23362c0074, seen in the top and right most graph) who sees a spike in likes in April. There are brief periods where the number of passes tend to spike among these users. During April, we see a spike in the number of passes for three out of the seven top users. The reason behind this is unclear, perhaps indicating underlying seasonal changes in dating preferences (perhaps these users' swiping criteria raised or change coming out of the winter, making them more likely to pass instead of like/match). One users also saw an increased number of passes as the year went on (user id cef50ce50692bb1260ae383c8e2a029c, seen in the lower and right most graph) but returning to a lower pass rate in December. 
+These trends indicate that there is no consistent pattern dictating swiping activity throughout the year across all Top 7 Tinder Users in 2020. A few broader take aways can be made: number of likes tend to be larger than the number of matches and matching activity is generally stable throughout the year with no major spikes among these users. Additional study should go into why there are spikes in pass activity (and occasionally liking activity) throughout the year, maybe expanding the search to top 10% of all Tinder users from 2020. 
+
+:::
